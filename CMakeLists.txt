@@ -8,4 +8,4 @@ endif()
 
 add_executable(perlin_noise perlin_noise.cpp)
 
-set_target_properties(perlin_noise PROPERTIES CXX_STANDARD 20)
+set_target_properties(perlin_noise PROPERTIES CXX_STANDARD 11)

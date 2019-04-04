@@ -17,27 +17,27 @@ class Vector {
   using iterator = T*;
   using Vec = Vector<N, T>;
 
-  constexpr Vector() {}
+  Vector() {}
 
   template <typename... Ts>
-  explicit constexpr Vector(Ts... ts) : dims_{ts...} {}
+  explicit Vector(Ts... ts) : dims_{ts...} {}
 
   // Necessary for boost::uniform_on_sphere.
-  explicit constexpr Vector(int) {}
+  explicit Vector(int) {}
 
-  auto begin() { return std::begin(dims_); }
-  auto end() { return std::end(dims_); }
+  iterator begin() { return std::begin(dims_); }
+  iterator end() { return std::end(dims_); }
 
-  constexpr bool operator==(const Vec& other) const {
+  bool operator==(const Vec& other) const {
     return std::equal(std::begin(dims_), std::end(dims_),
                       std::begin(other.dims_));
   }
 
-  constexpr const T& operator[](std::size_t i) const { return dims_[i]; }
-  constexpr T& operator[](std::size_t i) { return dims_[i]; }
+  const T& operator[](std::size_t i) const { return dims_[i]; }
+  T& operator[](std::size_t i) { return dims_[i]; }
 
   template <typename S>
-  constexpr Vec operator-(const Vector<N, S>& other) const {
+  Vec operator-(const Vector<N, S>& other) const {
     Vec new_vec;
     for (std::size_t i = 0; i < N; i++) {
       new_vec[i] = dims_[i] - other[i];
@@ -45,7 +45,7 @@ class Vector {
     return new_vec;
   }
 
-  constexpr T operator*(const Vec& other) const {
+  T operator*(const Vec& other) const {
     T dot = 0;
     for (std::size_t i = 0; i < N; i++) {
       dot += dims_[i] * other.dims_[i];
@@ -54,8 +54,8 @@ class Vector {
   }
 
   template <typename Func>
-  constexpr auto Transform(Func func) const {
-    Vector<N, decltype(func(dims_[0]))> new_vec;
+  auto Transform(Func func) const -> Vector<N, decltype(func({}))> {
+    Vector<N, decltype(func({}))> new_vec;
     for (std::size_t i = 0; i < N; i++) {
       new_vec[i] = func(dims_[i]);
     }
@@ -144,10 +144,10 @@ class Perlin {
 
 template <typename Float, typename Integer>
 void RenderFrames() {
-  constexpr std::size_t image_size = 128;
-  constexpr std::size_t animation_steps = 50;
-  constexpr Float space_r = 3.0;
-  constexpr Float time_r = 3.0;
+  const std::size_t image_size = 128;
+  const std::size_t animation_steps = 50;
+  const Float space_r = 3.0;
+  const Float time_r = 3.0;
   Perlin<6, Float, Integer> perlin;
   std::cout << '[';
   for (std::size_t i = 0; i < animation_steps; i++) {
