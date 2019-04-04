@@ -1,3 +1,20 @@
+// perlin-noise: Optimized N-dimensional perlin noise in C++
+// Copyright (C) 2019 <tomKPZ@gmail.com>
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+
 #include <algorithm>
 #include <boost/container_hash/hash.hpp>
 #include <boost/random/uniform_on_sphere.hpp>
@@ -17,7 +34,7 @@ class Vector {
   using iterator = T*;
   using Vec = Vector<N, T>;
 
-  Vector() {}
+  Vector() = default;
 
   template <typename... Ts>
   explicit Vector(Ts... ts) : dims_{ts...} {}
@@ -55,7 +72,7 @@ class Vector {
 
   template <typename Func>
   auto Transform(Func func) const -> Vector<N, decltype(func({}))> {
-    Vector<N, decltype(func({}))> new_vec;
+    Vector<N, decltype(func({}))> new_vec{};
     for (std::size_t i = 0; i < N; i++) {
       new_vec[i] = func(dims_[i]);
     }
@@ -94,7 +111,7 @@ class Perlin {
   };
 
   static Float Lerp(Float w, Float a0, Float a1) {
-    return w * a1 + (1.0f - w) * a0;
+    return w * a1 + (1.0F - w) * a0;
   }
 
   static Float Fade(Float t) { return t * t * t * (t * (t * 6 - 15) + 10); }
