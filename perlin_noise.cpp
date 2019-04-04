@@ -2,7 +2,6 @@
 #include <boost/container_hash/hash.hpp>
 #include <boost/random/uniform_on_sphere.hpp>
 #include <boost/unordered_map.hpp>
-#include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <iostream>
@@ -24,7 +23,7 @@ class Vector {
   explicit constexpr Vector(Ts... ts) : dims_{ts...} {}
 
   // Necessary for boost::uniform_on_sphere.
-  explicit constexpr Vector(int dim_arg) { assert(dim_arg == N); }
+  explicit constexpr Vector(int) {}
 
   auto begin() { return std::begin(dims_); }
   auto end() { return std::end(dims_); }
