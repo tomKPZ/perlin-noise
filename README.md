@@ -4,7 +4,7 @@ Optimized N-dimensional perlin noise in C++
 Installation
 ------------
 
-Simply add `perlin.hpp` to your project.
+Simply add `perlin_noise.hpp` to your project.
 
 Usage
 -----
