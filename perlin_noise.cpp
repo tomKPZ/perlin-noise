@@ -25,82 +25,92 @@
 #include <iterator>
 #include <numeric>
 #include <random>
-#include <unordered_map>
-#include <vector>
-
-template <std::size_t N, typename T = float>
-class Vector {
- public:
-  using iterator = T*;
-  using Vec = Vector<N, T>;
-
-  Vector() = default;
-
-  template <typename... Ts>
-  explicit Vector(Ts... ts) : dims_{ts...} {}
-
-  // Necessary for boost::uniform_on_sphere.
-  explicit Vector(int) {}
-
-  iterator begin() { return std::begin(dims_); }
-  iterator end() { return std::end(dims_); }
-
-  bool operator==(const Vec& other) const {
-    return std::equal(std::begin(dims_), std::end(dims_),
-                      std::begin(other.dims_));
-  }
-
-  const T& operator[](std::size_t i) const { return dims_[i]; }
-  T& operator[](std::size_t i) { return dims_[i]; }
-
-  template <typename S>
-  Vec operator-(const Vector<N, S>& other) const {
-    Vec new_vec;
-    for (std::size_t i = 0; i < N; i++) {
-      new_vec[i] = dims_[i] - other[i];
-    }
-    return new_vec;
-  }
-
-  T operator*(const Vec& other) const {
-    T dot = 0;
-    for (std::size_t i = 0; i < N; i++) {
-      dot += dims_[i] * other.dims_[i];
-    }
-    return dot;
-  }
-
-  template <typename Func>
-  auto Transform(Func func) const -> Vector<N, decltype(func({}))> {
-    Vector<N, decltype(func({}))> new_vec{};
-    for (std::size_t i = 0; i < N; i++) {
-      new_vec[i] = func(dims_[i]);
-    }
-    return new_vec;
-  }
-
- private:
-  T dims_[N];
-};
 
 template <std::size_t N, typename Float = float, typename Integer = int>
 class Perlin {
  public:
-  using FVec = Vector<N, Float>;
-  using IVec = Vector<N, Integer>;
-
   explicit Perlin(std::size_t seed = 0) : seed_{seed}, hash_{seed} {}
 
-  Float Noise(const FVec v) {
-    v0_ = v.Transform(
-        [](Float f) { return static_cast<Integer>(std::floor(f)); });
-    vd_ = v - v0_;
-    fade_ = vd_.Transform(Fade);
+  // Input vector components are given as parameters.  Example:
+  //   Perlin<3> perlin;
+  //   perlin.Noise(1, 2, 3);
+  template <typename... Ts>
+  Float Noise(Ts... ts) {
+    static_assert(sizeof...(ts) == N, "Wrong number of arguments for Noise()");
+    FVec v{ts...};
+    return Noise(v);
+  }
 
-    return PerlinMerge(0);
+  // Input vector given as any iterable type.  Example:
+  //   Perlin<3> perlin;
+  //   float v[3] = {1, 2, 3};
+  //   perlin.Noise(v);
+  template <typename T>
+  Float Noise(const T& t) {
+    FVec v;
+    std::copy_n(std::begin(t), N, std::begin(v));
+    return Noise(v);
   }
 
  private:
+  template <typename T>
+  class Vector {
+   public:
+    using iterator = T*;
+    using Vec = Vector<T>;
+
+    Vector() = default;
+
+    template <typename... Ts>
+    explicit Vector(Ts... ts) : dims_{ts...} {}
+
+    // Necessary for boost::uniform_on_sphere.
+    explicit Vector(int) {}
+
+    iterator begin() { return std::begin(dims_); }
+    iterator end() { return std::end(dims_); }
+
+    bool operator==(const Vec& other) const {
+      return std::equal(std::begin(dims_), std::end(dims_),
+                        std::begin(other.dims_));
+    }
+
+    const T& operator[](std::size_t i) const { return dims_[i]; }
+    T& operator[](std::size_t i) { return dims_[i]; }
+
+    template <typename S>
+    Vec operator-(const Vector<S>& other) const {
+      Vec new_vec;
+      for (std::size_t i = 0; i < N; i++) {
+        new_vec[i] = dims_[i] - other[i];
+      }
+      return new_vec;
+    }
+
+    T operator*(const Vec& other) const {
+      T dot = 0;
+      for (std::size_t i = 0; i < N; i++) {
+        dot += dims_[i] * other.dims_[i];
+      }
+      return dot;
+    }
+
+    template <typename Func>
+    auto Transform(Func func) const -> Vector<decltype(func({}))> {
+      Vector<decltype(func({}))> new_vec{};
+      for (std::size_t i = 0; i < N; i++) {
+        new_vec[i] = func(dims_[i]);
+      }
+      return new_vec;
+    }
+
+   private:
+    T dims_[N];
+  };
+
+  using FVec = Vector<Float>;
+  using IVec = Vector<Integer>;
+
   class Hasher {
    public:
     explicit Hasher(Perlin<N, Float, Integer>* perlin) : perlin_{perlin} {}
@@ -146,6 +156,15 @@ class Perlin {
     return Lerp(fade_[n], l, r);
   }
 
+  Float Noise(const FVec& v) {
+    v0_ = v.Transform(
+        [](Float f) { return static_cast<Integer>(std::floor(f)); });
+    vd_ = v - v0_;
+    fade_ = vd_.Transform(Fade);
+
+    return PerlinMerge(0);
+  }
+
   const std::size_t seed_;
   std::size_t hash_;
 
@@ -174,14 +193,13 @@ void RenderFrames() {
     for (std::size_t x = 0; x < image_size; x++) {
       std::cout << '[';
       for (std::size_t y = 0; y < image_size; y++) {
-        Float noise = perlin.Noise(Vector<6, Float>{
+        Float noise = perlin.Noise(
             static_cast<Float>(space_r * std::sin(2 * M_PI / image_size * x)),
             static_cast<Float>(space_r * std::cos(2 * M_PI / image_size * x)),
             static_cast<Float>(space_r * std::sin(2 * M_PI / image_size * y)),
             static_cast<Float>(space_r * std::cos(2 * M_PI / image_size * y)),
             static_cast<Float>(time_r * std::sin(2 * M_PI * progress)),
-            static_cast<Float>(time_r * std::cos(2 * M_PI * progress)),
-        });
+            static_cast<Float>(time_r * std::cos(2 * M_PI * progress)));
         std::cout << noise << ',';
       }
       std::cout << "],";
