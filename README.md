@@ -1,5 +1,5 @@
-perlin-noise -- Optimized N-dimensional perlin noise in C++
-===========================================================
+Optimized N-dimensional perlin noise in C++
+===========================================
 
 Installation
 ------------

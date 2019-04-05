@@ -1,3 +1,5 @@
+find_package(PkgConfig REQUIRED)
+
 cmake_minimum_required(VERSION 2.6)
 project(PerlinNoise)
 
@@ -6,6 +8,12 @@ if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
   add_compile_options(-march=native -mtune=native)
 endif()
 
-add_executable(perlin_noise perlin_noise.cpp)
+pkg_check_modules(PNG REQUIRED libpng)
 
-set_target_properties(perlin_noise PROPERTIES CXX_STANDARD 11)
+add_executable(noise_loop noise_loop.cpp)
+
+set_target_properties(noise_loop PROPERTIES CXX_STANDARD 11)
+
+target_link_libraries(noise_loop ${PNG_LIBRARIES})
+target_include_directories(noise_loop PUBLIC ${PNG_INCLUDE_DIRS})
+target_compile_options(noise_loop PUBLIC ${PNG_INCLUDE_DIRS})
