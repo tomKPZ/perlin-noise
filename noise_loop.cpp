@@ -76,10 +76,10 @@ void WritePngFile(const std::string& file_name,
 
 template <typename Float, typename Integer>
 void RenderFrames() {
-  const std::size_t image_size = 128;
-  const std::size_t animation_steps = 1;
-  const Float space_r = 3.0;
-  const Float time_r = 3.0;
+  const std::size_t image_size = 256;
+  const std::size_t animation_steps = 100;
+  const Float space_r = 2.0;
+  const Float time_r = 1.5;
   Perlin<6, Float, Integer> perlin;
   for (std::size_t i = 0; i < animation_steps; i++) {
     Float progress = static_cast<Float>(i) / animation_steps;
@@ -100,12 +100,12 @@ void RenderFrames() {
             static_cast<Float>(space_r * std::cos(2 * M_PI / image_size * y)),
             static_cast<Float>(time_r * std::sin(2 * M_PI * progress)),
             static_cast<Float>(time_r * std::cos(2 * M_PI * progress)));
-        bytes[y][x] = (noise + 1) / 2.0 * 255.0;
+        bytes[y][x] = (noise + 0.5) * 255.0;
       }
     }
 
-    WritePngFile("image.png", image_size, image_size, PNG_COLOR_TYPE_GRAY, 8,
-                 png_rows);
+    WritePngFile("animation/image_" + std::to_string(i) + ".png", image_size,
+                 image_size, PNG_COLOR_TYPE_GRAY, 8, png_rows);
   }
 }
 
