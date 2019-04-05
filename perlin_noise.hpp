@@ -147,8 +147,8 @@ class Perlin {
       return found;
     }
 
-    engine_.seed(hash_);
-    found = generator_(engine_);
+    std::default_random_engine engine{hash_};
+    found = generator_(engine);
     return found;
   }
 
@@ -187,7 +187,6 @@ class Perlin {
   FVec vd_;
   FVec fade_;
 
-  std::default_random_engine engine_;
   boost::uniform_on_sphere<Float, FVec> generator_{N};
 
   boost::unordered_map<IVec, FVec, Hasher> gradients_{0, Hasher{this}};
