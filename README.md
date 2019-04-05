@@ -13,7 +13,7 @@ Create a `Perlin` object and call its `Noise()` function.
 
 ```
 Perlin<3> perlin;
-perlin.Noise(1.0, 2.0, 3.0);
+perlin.Noise(1.0, 2.0, 3.0);  // Returns a value in (-0.5, 0.5).
 ```
 Example
 -------

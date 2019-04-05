@@ -28,11 +28,11 @@
 template <std::size_t N, typename Float = float, typename Integer = int>
 class Perlin {
  public:
-  explicit Perlin(std::size_t seed = 0) : seed_{seed}, hash_{seed} {}
+  explicit Perlin(std::size_t seed = 0) : hash_{seed} {}
 
   // Input vector components are given as parameters.  Example:
   //   Perlin<3> perlin;
-  //   perlin.Noise(1, 2, 3);
+  //   perlin.Noise(1, 2, 3);  // Returns a value in (-0.5, 0.5).
   template <typename... Ts>
   Float Noise(Ts... ts) {
     static_assert(sizeof...(ts) == N, "Wrong number of arguments for Noise()");
@@ -43,7 +43,7 @@ class Perlin {
   // Input vector given as any iterable type.  Example:
   //   Perlin<3> perlin;
   //   float v[3] = {1, 2, 3};
-  //   perlin.Noise(v);
+  //   perlin.Noise(v);  // Returns a value in (-0.5, 0.5).
   template <typename T>
   Float Noise(const T& t) {
     FVec v;
@@ -55,7 +55,7 @@ class Perlin {
   //   Perlin<3> perlin;
   //   float* v = (float*)malloc(3*sizeof(float));
   //   v[0] = 1; v[1] = 2; v[2] = 3;
-  //   perlin.Noise(v);
+  //   perlin.Noise(v);  // Returns a value in (-0.5, 0.5).
   Float Noise(const Float* f) {
     FVec v;
     std::copy_n(f, N, std::begin(v));
@@ -179,7 +179,6 @@ class Perlin {
     return PerlinMerge(0);
   }
 
-  const std::size_t seed_;
   std::size_t hash_;
 
   IVec v0_;
