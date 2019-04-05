@@ -18,7 +18,10 @@
 #include <png.h>
 
 #include <iostream>
+#include <mutex>
 #include <string>
+#include <thread>
+#include <vector>
 
 #include "perlin_noise.hpp"
 
@@ -76,36 +79,62 @@ void WritePngFile(const std::string& file_name,
 
 template <typename Float, typename Integer>
 void RenderFrames() {
-  const std::size_t image_size = 256;
-  const std::size_t animation_steps = 100;
-  const Float space_r = 2.0;
-  const Float time_r = 1.5;
-  Perlin<6, Float, Integer> perlin;
-  for (std::size_t i = 0; i < animation_steps; i++) {
-    Float progress = static_cast<Float>(i) / animation_steps;
-    std::cerr << "Progress: " << progress * 100 << std::endl;
+  constexpr std::size_t image_size = 256;
+  constexpr std::size_t animation_steps = 100;
+  constexpr Float space_r = 2.0;
+  constexpr Float time_r = 1.5;
+  constexpr Float two_pi = 2 * M_PI;
 
-    png_byte bytes[image_size][image_size];
-    png_bytep png_rows[image_size];
-    for (std::size_t j = 0; j < image_size; j++) {
-      png_rows[j] = bytes[j];
-    }
+  std::size_t frames_rendered = 0;
+  std::mutex frames_rendered_mutex;
 
-    for (std::size_t x = 0; x < image_size; x++) {
+  auto render_frames = [&](std::size_t frame_begin, std::size_t frame_end) {
+    Perlin<6, Float, Integer> perlin;
+    for (std::size_t i = frame_begin; i < frame_end; i++) {
+      Float progress = static_cast<Float>(i) / animation_steps;
+
+      png_byte bytes[image_size][image_size];
+      png_bytep png_rows[image_size];
+      for (std::size_t j = 0; j < image_size; j++) {
+        png_rows[j] = bytes[j];
+      }
+
       for (std::size_t y = 0; y < image_size; y++) {
-        Float noise = perlin.Noise(
-            static_cast<Float>(space_r * std::sin(2 * M_PI / image_size * x)),
-            static_cast<Float>(space_r * std::cos(2 * M_PI / image_size * x)),
-            static_cast<Float>(space_r * std::sin(2 * M_PI / image_size * y)),
-            static_cast<Float>(space_r * std::cos(2 * M_PI / image_size * y)),
-            static_cast<Float>(time_r * std::sin(2 * M_PI * progress)),
-            static_cast<Float>(time_r * std::cos(2 * M_PI * progress)));
-        bytes[y][x] = (noise + 0.5) * 255.0;
+        for (std::size_t x = 0; x < image_size; x++) {
+          Float noise =
+              perlin.Noise(space_r * std::sin(two_pi / image_size * x),
+                           space_r * std::cos(two_pi / image_size * x),
+                           space_r * std::sin(two_pi / image_size * y),
+                           space_r * std::cos(two_pi / image_size * y),
+                           time_r * std::sin(two_pi * progress),
+                           time_r * std::cos(two_pi * progress));
+          bytes[y][x] = (noise + 0.5) * 255.0;
+        }
+      }
+
+      WritePngFile("animation/image_" + std::to_string(i) + ".png", image_size,
+                   image_size, PNG_COLOR_TYPE_GRAY, 8, png_rows);
+
+      {
+        std::lock_guard<std::mutex> lock(frames_rendered_mutex);
+        std::cout << "Progress: " << ++frames_rendered << "/" << animation_steps
+                  << std::endl;
       }
     }
+  };
 
-    WritePngFile("animation/image_" + std::to_string(i) + ".png", image_size,
-                 image_size, PNG_COLOR_TYPE_GRAY, 8, png_rows);
+  unsigned int n_threads = std::thread::hardware_concurrency();
+  if (n_threads == 0) {
+    render_frames(0, animation_steps);
+  } else {
+    std::vector<std::thread> threads;
+    for (unsigned int i = 0; i < n_threads; i++) {
+      threads.emplace_back(render_frames, i * animation_steps / n_threads,
+                           (i + 1) * animation_steps / n_threads);
+    }
+    for (std::thread& thread : threads) {
+      thread.join();
+    }
   }
 }
 
