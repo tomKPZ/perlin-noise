@@ -147,8 +147,11 @@ class Perlin {
       return found;
     }
 
+    // Caching |engine| and |generator| in the Perlin object actually
+    // causes runtime to increase, so recreate them every time.
     std::default_random_engine engine{hash_};
-    found = generator_(engine);
+    boost::uniform_on_sphere<Float, FVec> generator{N};
+    found = generator(engine);
     return found;
   }
 
@@ -186,8 +189,6 @@ class Perlin {
   IVec v0_;
   FVec vd_;
   FVec fade_;
-
-  boost::uniform_on_sphere<Float, FVec> generator_{N};
 
   boost::unordered_map<IVec, FVec, Hasher> gradients_{0, Hasher{this}};
 };
