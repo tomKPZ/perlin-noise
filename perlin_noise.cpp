@@ -52,6 +52,21 @@ class Perlin {
     return Noise(v);
   }
 
+  // Input vector given as a pointer.  Example:
+  //   Perlin<3> perlin;
+  //   float* v = malloc(3*sizeof(float));
+  //   v[0] = 1; v[1] = 2; v[2] = 3;
+  //   perlin.Noise(v);
+  Float Noise(const Float* f) {
+    FVec v;
+    std::copy_n(f, N, std::begin(v));
+    return Noise(v);
+  }
+  Float Noise(Float* f) {
+    const Float* v = f;
+    return Noise(v);
+  }
+
  private:
   template <typename T>
   class Vector {
