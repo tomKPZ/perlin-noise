@@ -81,6 +81,7 @@ template <typename Float, typename Integer>
 void RenderFrames() {
   constexpr std::size_t image_size = 256;
   constexpr std::size_t animation_steps = 100;
+  constexpr std::size_t octaves = 4;
   constexpr Float space_r = 2.0;
   constexpr Float time_r = 1.5;
   constexpr Float two_pi = 2 * M_PI;
@@ -101,14 +102,18 @@ void RenderFrames() {
 
       for (std::size_t y = 0; y < image_size; y++) {
         for (std::size_t x = 0; x < image_size; x++) {
-          Float noise =
-              perlin.Noise(space_r * std::sin(two_pi / image_size * x),
-                           space_r * std::cos(two_pi / image_size * x),
-                           space_r * std::sin(two_pi / image_size * y),
-                           space_r * std::cos(two_pi / image_size * y),
-                           time_r * std::sin(two_pi * progress),
-                           time_r * std::cos(two_pi * progress));
-          bytes[y][x] = (noise + 0.5) * 255.0;
+          Float noise = 0;
+          for (std::size_t octave = 0; octave < octaves; octave++) {
+            std::size_t scale = 1 << octave;
+            noise += perlin.Noise(
+                scale * space_r * std::sin(two_pi / image_size * x),
+                scale * space_r * std::cos(two_pi / image_size * x),
+                scale * space_r * std::sin(two_pi / image_size * y),
+                scale * space_r * std::cos(two_pi / image_size * y),
+                time_r * std::sin(two_pi * progress),
+                time_r * std::cos(two_pi * progress));
+          }
+          bytes[y][x] = (noise / octaves + 0.5) * 255.0;
         }
       }
 

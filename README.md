@@ -19,6 +19,6 @@ Example
 -------
 
 To build and run the example, run `make_animation.sh`.  This will
-create a file `animation/animation.mp4`.  This example uses 6D noise
-to create an animation that loops and also tiles both vertically and
-horizontally.
+create a file `animation/animation.mp4`.  This example uses 6D fractal
+noise to create an animation that loops and also tiles both vertically
+and horizontally.
