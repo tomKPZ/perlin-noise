@@ -32,7 +32,7 @@ class Perlin {
 
   // Input vector components are given as parameters.  Example:
   //   Perlin<3> perlin;
-  //   perlin.Noise(1, 2, 3);  // Returns a value in (-0.5, 0.5).
+  //   perlin.Noise(1, 2, 3);  // Returns a value from -0.5 to 0.5
   template <typename... Ts>
   Float Noise(Ts... ts) {
     static_assert(sizeof...(ts) == N, "Wrong number of arguments for Noise()");
@@ -43,7 +43,7 @@ class Perlin {
   // Input vector given as any iterable type.  Example:
   //   Perlin<3> perlin;
   //   float v[3] = {1, 2, 3};
-  //   perlin.Noise(v);  // Returns a value in (-0.5, 0.5).
+  //   perlin.Noise(v);  // Returns a value from -0.5 to 0.5
   template <typename T>
   Float Noise(const T& t) {
     FVec v;
@@ -55,7 +55,7 @@ class Perlin {
   //   Perlin<3> perlin;
   //   float* v = (float*)malloc(3*sizeof(float));
   //   v[0] = 1; v[1] = 2; v[2] = 3;
-  //   perlin.Noise(v);  // Returns a value in (-0.5, 0.5).
+  //   perlin.Noise(v);  // Returns a value from -0.5 to 0.5
   Float Noise(const Float* f) {
     FVec v;
     std::copy_n(f, N, std::begin(v));
@@ -152,22 +152,24 @@ class Perlin {
     return found;
   }
 
-  Float PerlinMerge(std::size_t n) {
-    if (n == N) {
+  template <std::size_t M>
+  Float PerlinMerge() {
+    if constexpr (M == 0) {
       return vd_ * Gradient();
+    } else {
+      std::size_t old_hash = hash_;
+      boost::hash_combine(hash_, v0_[N - M]);
+      Float l = PerlinMerge<M - 1>();
+      hash_ = old_hash;
+      v0_[N - M]++;
+      vd_[N - M]--;
+      boost::hash_combine(hash_, v0_[N - M]);
+      Float r = PerlinMerge<M - 1>();
+      hash_ = old_hash;
+      v0_[N - M]--;
+      vd_[N - M]++;
+      return Lerp(fade_[N - M], l, r);
     }
-    std::size_t old_hash = hash_;
-    boost::hash_combine(hash_, v0_[n]);
-    Float l = PerlinMerge(n + 1);
-    hash_ = old_hash;
-    v0_[n]++;
-    vd_[n]--;
-    boost::hash_combine(hash_, v0_[n]);
-    Float r = PerlinMerge(n + 1);
-    hash_ = old_hash;
-    v0_[n]--;
-    vd_[n]++;
-    return Lerp(fade_[n], l, r);
   }
 
   Float Noise(const FVec& v) {
@@ -176,7 +178,7 @@ class Perlin {
     vd_ = v - v0_;
     fade_ = vd_.Transform(Fade);
 
-    return PerlinMerge(0);
+    return PerlinMerge<N>();
   }
 
   std::size_t hash_;
