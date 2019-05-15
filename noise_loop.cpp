@@ -81,39 +81,42 @@ template <typename Float, typename Integer>
 void RenderFrames() {
   constexpr std::size_t image_size = 256;
   constexpr std::size_t animation_steps = 100;
-  constexpr std::size_t octaves = 4;
+  constexpr std::size_t octaves = 5;
   constexpr Float space_r = 2.0;
-  constexpr Float time_r = 1.5;
+  constexpr Float time_r = 1.0;
   constexpr Float two_pi = 2 * M_PI;
+  constexpr Float octave_shift = two_pi / octaves;
 
   std::size_t frames_rendered = 0;
   std::mutex frames_rendered_mutex;
 
   auto render_frames = [&](std::size_t frame_begin, std::size_t frame_end) {
     Perlin<6, Float, Integer> perlin;
-    for (std::size_t i = frame_begin; i < frame_end; i++) {
+    for (std::size_t i = frame_begin; i < frame_end; ++i) {
       Float progress = static_cast<Float>(i) / animation_steps;
 
       png_byte bytes[image_size][image_size];
       png_bytep png_rows[image_size];
-      for (std::size_t j = 0; j < image_size; j++) {
+      for (std::size_t j = 0; j < image_size; ++j) {
         png_rows[j] = bytes[j];
       }
 
-      for (std::size_t y = 0; y < image_size; y++) {
-        for (std::size_t x = 0; x < image_size; x++) {
+      for (std::size_t y = 0; y < image_size; ++y) {
+        for (std::size_t x = 0; x < image_size; ++x) {
           Float noise = 0;
-          for (std::size_t octave = 0; octave < octaves; octave++) {
-            std::size_t scale = 1 << octave;
+          for (std::size_t octave = 0; octave < octaves; ++octave) {
+            Float scale = 1U << octave;
+            Float octave_offset = two_pi * progress + octave * octave_shift;
             noise += perlin.Noise(
-                scale * space_r * std::sin(two_pi / image_size * x),
-                scale * space_r * std::cos(two_pi / image_size * x),
-                scale * space_r * std::sin(two_pi / image_size * y),
-                scale * space_r * std::cos(two_pi / image_size * y),
-                time_r * std::sin(two_pi * progress),
-                time_r * std::cos(two_pi * progress));
+                         scale * space_r * std::sin(two_pi / image_size * x),
+                         scale * space_r * std::cos(two_pi / image_size * x),
+                         scale * space_r * std::sin(two_pi / image_size * y),
+                         scale * space_r * std::cos(two_pi / image_size * y),
+                         time_r * std::sin(octave_offset),
+                         time_r * std::cos(octave_offset)) /
+                     scale;
           }
-          bytes[y][x] = (noise / octaves + 0.5) * 255.0;
+          bytes[y][x] = (noise / 2 + 0.5) * 255.0;
         }
       }
 
@@ -133,7 +136,7 @@ void RenderFrames() {
     render_frames(0, animation_steps);
   } else {
     std::vector<std::thread> threads;
-    for (unsigned int i = 0; i < n_threads; i++) {
+    for (unsigned int i = 0; i < n_threads; ++i) {
       threads.emplace_back(render_frames, i * animation_steps / n_threads,
                            (i + 1) * animation_steps / n_threads);
     }
